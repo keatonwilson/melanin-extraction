@@ -136,5 +136,53 @@ Fig.2 = ggplot(cristina_R2s, aes(x = roundID, y = adj.r.squared, group = 1)) +
 ggsave(plot = Fig.2, "output/Fig.2.pdf", device = "pdf", width = 10, height = 10, units = "in")
 
   
-  
 
+#Cristina question - 2018-02-20 
+
+cristina %>%
+  mutate(r1r2 = (r1 + r2),
+         r1r3 = (r1 + r2 + r3), 
+         r1r4 = (r1 + r2 + r3 + r4), 
+         r1r5 = (r1 + r2 + r3 + r4 + r5)) %>%
+  group_by(ID) %>%
+  summarize(diffs = Sum - r1r2) %>%
+  ungroup() %>%
+  summarize(mean = mean(diffs),
+            sd = sd(diffs), 
+            max = max(diffs),
+            min = min(diffs))
+
+#We can also plot all of the curves
+
+Fig.3 = cristina %>%
+  gather(key = round, value = melanin, -ID, -Sum) %>%
+  ggplot(aes(x = as.numeric(factor(round)), y = melanin)) +
+    geom_path(aes(group = ID), alpha = 0.2) +
+    stat_smooth(method = "lm", formula = y ~ poly(x, 3), aes(group = 1)) +
+    theme_classic() +
+    xlab("Extraction Round Number") +
+    ylab("Extracted Melanin")
+
+ggsave(plot = Fig.3, "output/Fig.3.pdf", device = "pdf", width = 10, height = 10, units = "in")
+
+
+#modeling
+cristina_long = cristina %>%
+  gather(key = round, value = melanin, -ID, -Sum)
+cristina_long$round = as.numeric(factor(cristina_long$round))
+
+library(lme4)
+library(nlme)
+
+lm.1 = lme(melanin ~ poly(round, 3, raw = TRUE), random = ~1 | ID, data = cristina_long)
+
+#Cool, super significant
+cristina_long$predictions = predict(lm.1)
+Fig.3 = cristina_long %>%
+  ggplot(aes(x = as.numeric(factor(round)), y = melanin)) +
+  geom_path(aes(group = ID), alpha = 0.2) +
+  stat_smooth(method = "lm", formula = y ~ poly(x, 3), aes(group = 1), color = "red", se = FALSE) +
+  geom_path(aes(x = ))
+  theme_classic() +
+  xlab("Extraction Round Number") +
+  ylab("Extracted Melanin")
